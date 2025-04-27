@@ -26,3 +26,7 @@ python3 angle_calculator.py
 ```
 
 환경 돌리기
+
+## 윗몸일으키기
+
+https://github.com/user-attachments/assets/d886104c-18be-4600-b0a9-6dc3920ee78a
