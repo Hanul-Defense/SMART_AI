@@ -90,7 +90,7 @@ with mp_pose.Pose(min_detection_confidence=0.7, min_tracking_confidence=0.7) as 
 
             cv2.putText(
                 image,
-                "Left_Angle",
+                "Right_Angle",
                 (200, 25),
                 cv2.FONT_HERSHEY_SIMPLEX,
                 0.7,
@@ -100,7 +100,7 @@ with mp_pose.Pose(min_detection_confidence=0.7, min_tracking_confidence=0.7) as 
             )
             cv2.putText(
                 image,
-                f"{int(left_angle)}°",
+                f"{int(right_angle)}°",
                 (200, 70),
                 cv2.FONT_HERSHEY_SIMPLEX,
                 2,
@@ -110,9 +110,9 @@ with mp_pose.Pose(min_detection_confidence=0.7, min_tracking_confidence=0.7) as 
             )
 
             # 운동 상태 및 카운트
-            if left_angle > 110 or right_angle > 110:
+            if left_angle > 115 or right_angle > 115:
                 stage = "down"
-            if left_angle < 40 and stage == "down":
+            if (left_angle < 35 or right_angle < 35) and stage == "down":
                 stage = "up"
                 counter += 1
                 print(f"[🔥 Count] {counter}")
@@ -122,7 +122,7 @@ with mp_pose.Pose(min_detection_confidence=0.7, min_tracking_confidence=0.7) as 
             pass
 
         # UI 박스
-        cv2.rectangle(image, (0, 0), (240, 80), (0, 0, 0), -1)
+        cv2.rectangle(image, (0, 0), (200, 80), (0, 0, 0), -1)
         cv2.putText(
             image,
             "REPS",
