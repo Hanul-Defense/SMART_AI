@@ -127,14 +127,17 @@ with mp_pose.Pose(min_detection_confidence=0.7, min_tracking_confidence=0.7) as 
             # 운동 상태 및 카운트
             if left_angle > 115 or right_angle > 115:
                 stage = "down"
-                # if -0.03 <= right_relative_x <= 0.03 and stage == "down":
-                #     stage = "up"
-                #     counter += 1
-                #     print(f"[🔥 Count] {counter}")
-                #     print(
-                #         f"right touch (rel): {right_relative_x:.3f}, {right_relative_y:.3f}"
-                #     )
 
+            # 좌표 기반
+            # if -0.03 <= right_relative_x <= 0.03 and stage == "down":
+            #     stage = "up"
+            #     counter += 1
+            #     print(f"[🔥 Count] {counter}")
+            #     print(
+            #         f"right touch (rel): {right_relative_x:.3f}, {right_relative_y:.3f}"
+            #     )
+
+            # 각도 기반
             if (left_angle < 30 or right_angle < 30) and stage == "down":
                 stage = "up"
                 counter += 1
