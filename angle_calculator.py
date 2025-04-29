@@ -23,6 +23,7 @@ mp_pose = mp.solutions.pose
 # 반복 횟수 변수
 counter = 0
 stage = None
+is_visible = False
 
 # 웹캠 열기
 cap = cv2.VideoCapture(0)
@@ -44,7 +45,8 @@ with mp_pose.Pose(min_detection_confidence=0.7, min_tracking_confidence=0.7) as 
         image.flags.writeable = True
         image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
 
-        try:
+        if results.pose_landmarks:
+            is_visible = True
             landmarks = results.pose_landmarks.landmark
 
             # 왼쪽 팔 좌표 추출
@@ -66,13 +68,16 @@ with mp_pose.Pose(min_detection_confidence=0.7, min_tracking_confidence=0.7) as 
             # 운동 상태 및 카운트
             if angle > 160:
                 stage = "down"
-            if angle < 40 and stage == 'down':
+            if angle < 90 and stage == 'down':
                 stage = "up"
                 counter += 1
                 print(f"[🔥 Count] {counter}")
 
-        except:
-            pass
+        else:
+            # 포즈를 못 찾으면 사람 없는 걸로 간주
+            is_visible = False
+            stage = None  # 새로 들어오면 다시 초기화
+
 
         # UI 박스
         cv2.rectangle(image, (0, 0), (225, 80), (0, 0, 0), -1)
