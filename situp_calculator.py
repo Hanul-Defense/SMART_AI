@@ -2,6 +2,7 @@ from angle_calculator import calculate_angle
 import cv2
 import numpy as np
 import mediapipe as mp
+import time
 
 category = input("숫자를 입략해주세요.(1. pushup 2. situp)")
 
@@ -12,13 +13,14 @@ mp_pose = mp.solutions.pose
 # 반복 횟수 변수
 counter = 0
 stage = None
-
+angle_list = []
+frame_angles = []
 
 # 웹캠 열기
 # 기본 값: 0, 외부 카메라 연결: 1
-# cap = cv2.VideoCapture(1)
+# cap = cv2.VideoCapture(0)
 cap = cv2.VideoCapture("./res/right1.mov")
-
+last_log = time.time()
 with mp_pose.Pose(min_detection_confidence=0.7, min_tracking_confidence=0.7) as pose:
     while cap.isOpened():
         ret, frame = cap.read()
@@ -76,6 +78,19 @@ with mp_pose.Pose(min_detection_confidence=0.7, min_tracking_confidence=0.7) as 
             left_angle = calculate_angle(left_shoulder, left_hip, left_knee)
             right_angle = calculate_angle(right_shoulder, right_hip, right_knee)
 
+            left_relative_x = round(left_elbow[0] - left_knee[0], 3)
+            left_relative_y = round(left_elbow[1] - left_knee[1], 3)
+            right_relative_x = round(right_elbow[0] - right_knee[0], 3)
+            right_relative_y = round(right_elbow[1] - right_knee[1], 3)
+
+            current_time = time.time()
+            if current_time - last_log >= 0.1:
+                frame_angles.append(round(right_angle, 4))
+                if len(frame_angles) == 10:
+                    angle_list.append(frame_angles)
+                    frame_angles = []
+                    # print(right_relative_x)
+
             # 화면에 각도 표시
             cv2.putText(
                 image,
@@ -91,7 +106,7 @@ with mp_pose.Pose(min_detection_confidence=0.7, min_tracking_confidence=0.7) as 
             cv2.putText(
                 image,
                 "Right_Angle",
-                (200, 25),
+                (300, 25),
                 cv2.FONT_HERSHEY_SIMPLEX,
                 0.7,
                 (255, 255, 255),
@@ -100,8 +115,8 @@ with mp_pose.Pose(min_detection_confidence=0.7, min_tracking_confidence=0.7) as 
             )
             cv2.putText(
                 image,
-                f"{int(right_angle)}°",
-                (200, 70),
+                f"{float(round(right_angle,5))}°",
+                (300, 70),
                 cv2.FONT_HERSHEY_SIMPLEX,
                 2,
                 (0, 255, 255),
@@ -112,11 +127,30 @@ with mp_pose.Pose(min_detection_confidence=0.7, min_tracking_confidence=0.7) as 
             # 운동 상태 및 카운트
             if left_angle > 115 or right_angle > 115:
                 stage = "down"
-            if (left_angle < 35 or right_angle < 35) and stage == "down":
+                # if -0.03 <= right_relative_x <= 0.03 and stage == "down":
+                #     stage = "up"
+                #     counter += 1
+                #     print(f"[🔥 Count] {counter}")
+                #     print(
+                #         f"right touch (rel): {right_relative_x:.3f}, {right_relative_y:.3f}"
+                #     )
+
+            if (left_angle < 30 or right_angle < 30) and stage == "down":
                 stage = "up"
                 counter += 1
                 print(f"[🔥 Count] {counter}")
-                print(f"left shoulder: {left_shoulder[0]} , {left_shoulder[1]}")
+                left_relative_x = left_elbow[0] - left_knee[0]
+                left_relative_y = left_elbow[1] - left_knee[1]
+                right_relative_x = right_elbow[0] - right_knee[0]
+                right_relative_y = right_elbow[1] - right_knee[1]
+                # print(
+                #         f"left touch (rel): {left_relative_x:.3f}, {left_relative_y:.3f}"
+                #     )
+                print(
+                    f"right touch (rel): {right_relative_x:.3f}, {right_relative_y:.3f}"
+                )
+
+            # print(f"left shoulder: {left_shoulder[0]} , {left_shoulder[1]}")
 
         except:
             pass
@@ -174,6 +208,10 @@ with mp_pose.Pose(min_detection_confidence=0.7, min_tracking_confidence=0.7) as 
         cv2.imshow("Bicep Curl Counter", image)
         if cv2.waitKey(10) & 0xFF == ord("q"):
             break
+
+# for row in angle_list:
+#     print(row)
+
 
 cap.release()
 cv2.destroyAllWindows()
