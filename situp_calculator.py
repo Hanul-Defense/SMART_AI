@@ -1,8 +1,18 @@
-from angle_calculator import calculate_angle
 import cv2
 import numpy as np
 import mediapipe as mp
 import time
+
+from angle_calculator import calculate_angle
+from utils.ui_utils import draw_ui_box, draw_angle
+from enum import Enum
+
+
+class FacingDirection(Enum):
+    LEFT = "LEFT"
+    RIGHT = "RIGHT"
+    UNKNOWN = "UNKNOWN"
+
 
 category = input("숫자를 입략해주세요.(1. pushup 2. situp)")
 
@@ -44,10 +54,12 @@ with mp_pose.Pose(min_detection_confidence=0.7, min_tracking_confidence=0.7) as 
             left_shoulder = [
                 landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value].x,
                 landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value].y,
+                landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value].z,
             ]
             right_shoulder = [
                 landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value].x,
                 landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value].y,
+                landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value].z,
             ]
             left_hip = [
                 landmarks[mp_pose.PoseLandmark.LEFT_HIP.value].x,
@@ -91,37 +103,18 @@ with mp_pose.Pose(min_detection_confidence=0.7, min_tracking_confidence=0.7) as 
                     frame_angles = []
                     # print(right_relative_x)
 
-            # 화면에 각도 표시
-            cv2.putText(
-                image,
-                f"{int(left_angle)}°",
-                tuple(np.multiply(left_hip, [640, 480]).astype(int)),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                0.8,
-                (255, 255, 255),
-                2,
-                cv2.LINE_AA,
+            draw_angle(
+                image=image,
+                left_angle=round(left_angle, 2),
+                right_angle=round(right_angle, 2),
+                left_hip=left_hip,
             )
 
-            cv2.putText(
-                image,
-                "Right_Angle",
-                (300, 25),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                0.7,
-                (255, 255, 255),
-                1,
-                cv2.LINE_AA,
-            )
-            cv2.putText(
-                image,
-                f"{float(round(right_angle,5))}°",
-                (300, 70),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                2,
-                (0, 255, 255),
-                2,
-                cv2.LINE_AA,
+            # 발 방향
+            feet_direction = (
+                FacingDirection.RIGHT
+                if (left_shoulder[2] - right_shoulder[2]) > 0
+                else FacingDirection.LEFT
             )
 
             # 운동 상태 및 카운트
@@ -129,78 +122,25 @@ with mp_pose.Pose(min_detection_confidence=0.7, min_tracking_confidence=0.7) as 
                 stage = "down"
 
             # 좌표 기반
-            # if -0.03 <= right_relative_x <= 0.03 and stage == "down":
-            #     stage = "up"
-            #     counter += 1
-            #     print(f"[🔥 Count] {counter}")
-            #     print(
-            #         f"right touch (rel): {right_relative_x:.3f}, {right_relative_y:.3f}"
-            #     )
-
-            # 각도 기반
-            if (left_angle < 30 or right_angle < 30) and stage == "down":
+            if (
+                (-0.03 <= left_relative_x <= 0.03 or -0.03 <= right_relative_x <= 0.03)
+                and (left_angle < 30 or right_angle < 30)
+                and stage == "down"
+            ):
                 stage = "up"
                 counter += 1
                 print(f"[🔥 Count] {counter}")
-                left_relative_x = left_elbow[0] - left_knee[0]
-                left_relative_y = left_elbow[1] - left_knee[1]
-                right_relative_x = right_elbow[0] - right_knee[0]
-                right_relative_y = right_elbow[1] - right_knee[1]
-                # print(
-                #         f"left touch (rel): {left_relative_x:.3f}, {left_relative_y:.3f}"
-                #     )
+                print(f"left touch (rel): {left_relative_x:.3f}, {left_relative_y:.3f}")
+                print(f"{left_shoulder[2]:.3f}  {right_shoulder[2]:.3f}")
                 print(
                     f"right touch (rel): {right_relative_x:.3f}, {right_relative_y:.3f}"
                 )
 
-            # print(f"left shoulder: {left_shoulder[0]} , {left_shoulder[1]}")
-
         except:
             pass
 
-        # UI 박스
-        cv2.rectangle(image, (0, 0), (200, 80), (0, 0, 0), -1)
-        cv2.putText(
-            image,
-            "REPS",
-            (10, 25),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            0.7,
-            (255, 255, 255),
-            1,
-            cv2.LINE_AA,
-        )
-        cv2.putText(
-            image,
-            str(counter),
-            (10, 70),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            2,
-            (0, 255, 0),
-            2,
-            cv2.LINE_AA,
-        )
-
-        cv2.putText(
-            image,
-            "STAGE",
-            (100, 25),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            0.7,
-            (255, 255, 255),
-            1,
-            cv2.LINE_AA,
-        )
-        cv2.putText(
-            image,
-            stage if stage else "-",
-            (100, 70),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            2,
-            (0, 255, 255),
-            2,
-            cv2.LINE_AA,
-        )
+        # ui box 그리기
+        draw_ui_box(image=image, counter=counter, stage=stage)
 
         # 랜드마크 시각화
         mp_drawing.draw_landmarks(
@@ -211,9 +151,6 @@ with mp_pose.Pose(min_detection_confidence=0.7, min_tracking_confidence=0.7) as 
         cv2.imshow("Bicep Curl Counter", image)
         if cv2.waitKey(10) & 0xFF == ord("q"):
             break
-
-# for row in angle_list:
-#     print(row)
 
 
 cap.release()
